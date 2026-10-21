@@ -1,0 +1,50 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+enum TicketType {
+  NORMAL
+  PRIORITY
+}
+
+enum Stage {
+  WAITING_RECEPTION
+  WAITING_TRIAGE
+  IN_TRIAGE
+  WAITING_CONSULT
+  IN_CONSULT
+  DONE
+}
+
+// Uma senha tirada no totem. Acompanha o paciente por toda a clínica.
+model Ticket {
+  id             Int           @id @default(autoincrement())
+  code           String        // ex.: N003 (normal) ou P001 (prioritária)
+  type           TicketType    @default(NORMAL)
+  stage          Stage         @default(WAITING_RECEPTION)
+  room           String?       // sala/guichê da última chamada
+  stageEnteredAt DateTime      @default(now())
+  createdAt      DateTime      @default(now())
+  events         TicketEvent[]
+
+  @@index([stage])
+  @@index([createdAt])
+}
+
+// Histórico: cada mudança de etapa vira um registro com horário.
+// É daqui que sai o cálculo de tempo de espera por etapa.
+model TicketEvent {
+  id        Int      @id @default(autoincrement())
+  ticketId  Int
+  ticket    Ticket   @relation(fields: [ticketId], references: [id], onDelete: Cascade)
+  stage     Stage
+  room      String?
+  createdAt DateTime @default(now())
+
+  @@index([ticketId])
+}
