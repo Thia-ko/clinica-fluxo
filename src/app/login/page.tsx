@@ -1,4 +1,3 @@
-import Link from "next/link";
 import LoginForm from "./LoginForm";
 
 export default function LoginPage() {
@@ -9,9 +8,6 @@ export default function LoginPage() {
         Acesso da equipe da clínica. Seu cargo é definido pelo RH/T.I.
       </p>
       <LoginForm />
-      <Link href="/" className="mt-8 text-sm text-zinc-500 hover:underline">
-        ← Voltar ao início
-      </Link>
     </main>
   );
 }

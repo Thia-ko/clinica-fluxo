@@ -12,23 +12,40 @@ import type { Stage, TicketType } from "@prisma/client";
 export async function createTicket(type: TicketType) {
   const prefix = type === "PRIORITY" ? "P" : "N";
 
-  const ticket = await prisma.$transaction(async (tx) => {
+  const { ticket, ahead } = await prisma.$transaction(async (tx) => {
     const countToday = await tx.ticket.count({
       where: { type, createdAt: { gte: startOfToday() } },
     });
     const code = `${prefix}${String(countToday + 1).padStart(3, "0")}`;
 
-    return tx.ticket.create({
+    const ticket = await tx.ticket.create({
       data: {
         code,
         type,
         events: { create: { stage: "WAITING_RECEPTION" } },
       },
     });
+
+    // Quem será chamado antes: prioritária só espera outras prioritárias que
+    // chegaram antes; normal espera todo mundo que chegou antes dela.
+    const ahead = await tx.ticket.count({
+      where: {
+        stage: "WAITING_RECEPTION",
+        id: { lt: ticket.id },
+        ...(type === "PRIORITY" ? { type: "PRIORITY" } : {}),
+      },
+    });
+
+    return { ticket, ahead };
   });
 
   revalidatePath("/fila");
-  return { id: ticket.id, code: ticket.code };
+  return {
+    code: ticket.code,
+    type: ticket.type,
+    ahead,
+    issuedAt: ticket.createdAt.toISOString(),
+  };
 }
 
 /** Fila: avança uma senha para a próxima etapa do fluxo. */

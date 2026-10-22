@@ -1,20 +1,36 @@
+import { startOfToday } from "@/lib/dates";
 import { prisma } from "@/lib/db";
 import { CALLED_STAGES } from "@/lib/flow";
 import { NextResponse } from "next/server";
 
-/** Senhas atualmente chamadas (em triagem ou consulta), da mais recente para a mais antiga. */
+/**
+ * Últimas chamadas do dia, da mais recente para a mais antiga.
+ * Vem do histórico (TicketEvent), então uma senha continua no painel
+ * mesmo depois que o paciente avançou de etapa.
+ */
 export async function GET() {
-  const called = await prisma.ticket.findMany({
-    where: { stage: { in: CALLED_STAGES } },
-    orderBy: { stageEnteredAt: "desc" },
-    take: 8,
+  const events = await prisma.ticketEvent.findMany({
+    where: {
+      stage: { in: CALLED_STAGES },
+      createdAt: { gte: startOfToday() },
+    },
+    orderBy: { createdAt: "desc" },
+    take: 7,
     select: {
       id: true,
-      code: true,
-      type: true,
       room: true,
-      stageEnteredAt: true,
+      createdAt: true,
+      ticket: { select: { code: true, type: true } },
     },
   });
-  return NextResponse.json({ called });
+
+  return NextResponse.json({
+    calls: events.map((e) => ({
+      id: e.id,
+      code: e.ticket.code,
+      type: e.ticket.type,
+      room: e.room,
+      at: e.createdAt.toISOString(),
+    })),
+  });
 }
