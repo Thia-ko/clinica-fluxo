@@ -12,5 +12,7 @@ export const ALL_ROLES = Object.keys(ROLE_LABEL) as Role[];
 
 /** Para onde cada cargo vai logo depois de entrar. */
 export function homeFor(role: Role) {
-  return role === "ADMIN" ? "/admin/usuarios" : "/fila";
+  if (role === "ADMIN") return "/admin/usuarios";
+  if (role === "MANAGER") return "/gestao";
+  return "/fila";
 }

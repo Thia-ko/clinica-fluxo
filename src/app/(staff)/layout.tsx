@@ -33,6 +33,11 @@ async function StaffHeader() {
           <Link href="/fila" className="hover:text-blue-700">
             Fila
           </Link>
+          {(user.role === "ADMIN" || user.role === "MANAGER") && (
+            <Link href="/gestao" className="hover:text-blue-700">
+              Gestão
+            </Link>
+          )}
           {user.role === "ADMIN" && (
             <Link href="/admin/usuarios" className="hover:text-blue-700">
               Usuários

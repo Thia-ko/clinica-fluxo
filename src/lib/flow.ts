@@ -67,3 +67,25 @@ export function canAdvance(role: Role, transition: Transition) {
 
 /** Etapas em que a senha aparece no painel da TV (foi chamada). */
 export const CALLED_STAGES: Stage[] = ["IN_TRIAGE", "IN_CONSULT"];
+
+/** Etapas que o painel de gestão mede (quanto tempo a senha ficou em cada uma). */
+export const MEASURED_STAGES: Stage[] = [
+  "WAITING_RECEPTION",
+  "WAITING_TRIAGE",
+  "IN_TRIAGE",
+  "WAITING_CONSULT",
+  "IN_CONSULT",
+];
+
+/**
+ * Limite de espera, em minutos, para as etapas em que o paciente fica parado.
+ * Passou do limite = alerta. (Valores de exemplo: a clínica pode ajustá-los.)
+ */
+export const WAIT_LIMIT_MIN: Partial<Record<Stage, number>> = {
+  WAITING_RECEPTION: 10,
+  WAITING_TRIAGE: 15,
+  WAITING_CONSULT: 30,
+};
+
+/** Etapas de espera: onde o paciente sente a demora. */
+export const WAITING_STAGES = Object.keys(WAIT_LIMIT_MIN) as Stage[];

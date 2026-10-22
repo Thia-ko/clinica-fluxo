@@ -3,15 +3,10 @@
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { requireUser } from "@/lib/auth";
+import { startOfToday } from "@/lib/dates";
 import { prisma } from "@/lib/db";
 import { TRANSITIONS, canAdvance } from "@/lib/flow";
 import type { Stage, TicketType } from "@prisma/client";
-
-function startOfToday() {
-  const d = new Date();
-  d.setHours(0, 0, 0, 0);
-  return d;
-}
 
 /** Totem: gera a próxima senha do dia (N001, N002... / P001, P002...). */
 export async function createTicket(type: TicketType) {

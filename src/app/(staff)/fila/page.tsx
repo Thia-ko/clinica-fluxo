@@ -5,7 +5,7 @@ import type { Stage } from "@prisma/client";
 import { connection } from "next/server";
 import { Suspense } from "react";
 import { advanceTicket } from "@/app/actions";
-import AutoRefresh from "./AutoRefresh";
+import AutoRefresh from "@/components/AutoRefresh";
 
 const ACTIVE_STAGES: Stage[] = [
   "WAITING_RECEPTION",

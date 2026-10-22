@@ -10,6 +10,7 @@ Sistema de gestão do fluxo de pacientes de uma clínica: da senha no totem até
 - **Fila** (`/fila`): recepção, triagem e consultório avançam cada senha de etapa. Prioritárias aparecem primeiro e cada senha mostra há quantos minutos está na etapa.
 - **Painel de chamada** (`/painel`): tela para a TV com a senha chamada e a sala, atualizando sozinha.
 - **Login e cargos**: Admin, Recepção, Enfermagem, Médico e Gestor. Cada cargo só executa as ações da sua etapa (a Recepção faz check-in, a Enfermagem chama a triagem, o Médico chama o consultório). O Admin cria usuários e define cargos em `/admin/usuarios`.
+- **Painel de gestão** (`/gestao`, Gestor e Admin): espera média por paciente, tempo médio por etapa contra o limite, alertas de senhas atrasadas agora e horários de pico, com filtro por período e versão em tabela dos gráficos.
 - Cada mudança de etapa grava um horário (`TicketEvent`), base para calcular tempos de espera.
 
 Fluxo da senha:
@@ -22,13 +23,15 @@ Aguardando recepção → Aguardando triagem → Em triagem → Aguardando consu
 
 - [x] Fase 1–4: projeto, senhas, etapas com horário e painel de chamada
 - [x] Fase 5: login e cargos (Admin, Recepção, Enfermagem, Médico, Gestor)
-- [ ] Fase 6: painel de gestão (tempo médio por etapa, alertas de atraso)
-- [ ] Fase 7: pesquisa de satisfação do paciente
-- [ ] Fase 8: deploy e troca de SQLite por PostgreSQL
+- [x] Fase 6: painel de gestão (tempo médio por etapa, alertas de atraso, horários de pico)
+- [ ] Fase 7: **cada tela na sua rota, com foco no painel de chamada e no totem** (sem menu inicial: `/totem` no tablet, `/painel` na TV, equipe entra por `/login`; painel com aviso sonoro/voz e histórico de chamadas; totem pensado para toque e impressão da senha)
+- [ ] Fase 8: fila de atendimento (refinar a tela da equipe)
+- [ ] Fase 9: pesquisa de satisfação do paciente
+- [ ] Fase 10: deploy e troca de SQLite por PostgreSQL
 
 ## Tecnologias
 
-Next.js 16 · React 19 · TypeScript · Tailwind CSS 4 · Prisma 6 · SQLite
+Next.js 16 · React 19 · TypeScript · Tailwind CSS 4 · Prisma 6 · SQLite · Vitest
 
 ## Como rodar
 
@@ -39,8 +42,11 @@ npm install
 cp .env.example .env
 npx prisma db push
 npm run seed   # cria usuários FICTÍCIOS de demonstração (veja prisma/seed.ts)
+npm run seed:demo   # opcional: ~700 senhas FICTÍCIAS para o painel de gestão (apaga as senhas atuais)
 npm run dev
 ```
+
+Testes das contas de tempo: `npm test`.
 
 Abra <http://localhost:3000>. Os e-mails de demonstração e a senha estão em `prisma/seed.ts` (use apenas em desenvolvimento). Dica: deixe `/painel` aberto em uma aba e use `/fila` em outra para ver a chamada acontecendo.
 
@@ -61,6 +67,8 @@ src/app/actions.ts     ações do servidor (criar senha, avançar etapa)
 src/app/totem          tela do totem
 src/app/(staff)/fila   tela da fila de atendimento (exige login)
 src/app/(staff)/admin  gestão de usuários e cargos (só Admin)
+src/app/(staff)/gestao painel de gestão (gráficos, alertas)
+src/lib/metrics.ts     cálculo dos tempos por etapa e alertas (com testes)
 src/app/login          tela de login
 src/lib/auth.ts        exige login/cargo em páginas e ações
 src/lib/session.ts     sessões em cookie HttpOnly + banco
