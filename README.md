@@ -17,7 +17,7 @@ Cada tela tem a sua rota; não existe menu inicial.
 ## O que já funciona
 
 - **Totem** (`/totem`): feito para toque. O paciente tira a senha normal (`N001`) ou prioritária (`P001`), vê quantas pessoas estão na frente, pode imprimir a senha e a tela volta sozinha ao início.
-- **Fila** (`/fila`): recepção, triagem e consultório avançam cada senha de etapa. Prioritárias aparecem primeiro e cada senha mostra há quantos minutos está na etapa.
+- **Fila** (`/fila`): cada cargo vê primeiro a sua etapa (com botão para ver todas). Prioritárias vêm primeiro, a próxima da fila é marcada e senhas acima do limite de espera ficam em destaque (ícone, tempo e limite). A equipe pode **chamar novamente** (o painel da TV anuncia de novo) e marcar **não compareceu**; a Recepção pode **reinserir** quem chegar depois no fim da fila.
 - **Painel de chamada** (`/painel`): tela para a TV com a senha chamada, a sala, relógio e histórico das últimas chamadas. Avisa com som e voz em português (toque uma vez em "Ativar som e voz", exigência dos navegadores).
 - **Login e cargos**: Admin, Recepção, Enfermagem, Médico e Gestor. Cada cargo só executa as ações da sua etapa (a Recepção faz check-in, a Enfermagem chama a triagem, o Médico chama o consultório). O Admin cria usuários e define cargos em `/admin/usuarios`.
 - **Painel de gestão** (`/gestao`, Gestor e Admin): espera média por paciente, tempo médio por etapa contra o limite, alertas de senhas atrasadas agora e horários de pico, com filtro por período e versão em tabela dos gráficos.
@@ -35,7 +35,7 @@ Aguardando recepção → Aguardando triagem → Em triagem → Aguardando consu
 - [x] Fase 5: login e cargos (Admin, Recepção, Enfermagem, Médico, Gestor)
 - [x] Fase 6: painel de gestão (tempo médio por etapa, alertas de atraso, horários de pico)
 - [x] Fase 7: cada tela na sua rota, com foco no painel de chamada e no totem (sem menu inicial: `/totem` no tablet, `/painel` na TV, equipe entra por `/login`)
-- [ ] Fase 8: fila de atendimento (refinar a tela da equipe)
+- [x] Fase 8: fila de atendimento (visão por cargo, destaque de atrasos, chamar novamente, não compareceu)
 - [ ] Fase 9: pesquisa de satisfação do paciente
 - [ ] Fase 10: deploy e troca de SQLite por PostgreSQL
 

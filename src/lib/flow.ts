@@ -7,6 +7,7 @@ export const STAGE_LABEL: Record<Stage, string> = {
   WAITING_CONSULT: "Aguardando consulta",
   IN_CONSULT: "Em consulta",
   DONE: "Finalizado",
+  NO_SHOW: "Não compareceu",
 };
 
 export const TYPE_LABEL: Record<TicketType, string> = {
@@ -89,3 +90,26 @@ export const WAIT_LIMIT_MIN: Partial<Record<Stage, number>> = {
 
 /** Etapas de espera: onde o paciente sente a demora. */
 export const WAITING_STAGES = Object.keys(WAIT_LIMIT_MIN) as Stage[];
+
+/** Etapas em que a senha ainda está em atendimento (aparecem na fila). */
+export const ACTIVE_STAGES: Stage[] = [
+  "WAITING_RECEPTION",
+  "WAITING_TRIAGE",
+  "IN_TRIAGE",
+  "WAITING_CONSULT",
+  "IN_CONSULT",
+];
+
+/** Etapas que cada cargo acompanha por padrão na fila ("minha etapa"). */
+export function stagesForRole(role: Role): Stage[] {
+  switch (role) {
+    case "RECEPTION":
+      return ["WAITING_RECEPTION"];
+    case "NURSE":
+      return ["WAITING_TRIAGE", "IN_TRIAGE"];
+    case "DOCTOR":
+      return ["WAITING_CONSULT", "IN_CONSULT"];
+    default:
+      return ACTIVE_STAGES; // Admin e Gestor veem tudo
+  }
+}

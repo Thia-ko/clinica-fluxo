@@ -19,6 +19,7 @@ enum Stage {
   WAITING_CONSULT
   IN_CONSULT
   DONE
+  NO_SHOW // chamado, mas não compareceu
 }
 
 // Uma senha tirada no totem. Acompanha o paciente por toda a clínica.

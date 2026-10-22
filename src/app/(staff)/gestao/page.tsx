@@ -123,6 +123,11 @@ async function Dashboard({
               hint="da chegada ao fim"
             />
             <Tile label="Em andamento agora" value={String(inQueue)} />
+            <Tile
+              label="Não compareceram"
+              value={String(summary.noShows)}
+              hint="chamados que não vieram"
+            />
           </section>
 
           <section className="mt-6 rounded-xl border border-zinc-200 p-5">

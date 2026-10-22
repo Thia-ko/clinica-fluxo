@@ -46,6 +46,8 @@ export type StageStat = {
 export type Summary = {
   issued: number;
   finished: number;
+  /** Senhas chamadas que não compareceram. */
+  noShows: number;
   stages: StageStat[];
   /** Média da soma das esperas de cada paciente (o que ele sente). */
   avgWaitMin: number | null;
@@ -63,9 +65,11 @@ export function summarize(tickets: TicketTimeline[]): Summary {
   const waitTotals: number[] = [];
   const totals: number[] = [];
   const byHour = Array.from({ length: 24 }, () => 0);
+  let noShows = 0;
 
   for (const t of tickets) {
     byHour[t.createdAt.getHours()] += 1;
+    if (t.events.some((e) => e.stage === "NO_SHOW")) noShows += 1;
 
     const durations = stageDurations(t.events);
     let waitSum = 0;
@@ -107,6 +111,7 @@ export function summarize(tickets: TicketTimeline[]): Summary {
   return {
     issued: tickets.length,
     finished: totals.length,
+    noShows,
     stages,
     avgWaitMin: mean(waitTotals),
     avgTotalMin: mean(totals),

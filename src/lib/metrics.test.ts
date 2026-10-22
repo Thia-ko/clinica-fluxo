@@ -169,3 +169,50 @@ describe("findAlerts", () => {
     expect(alerts).toEqual([]);
   });
 });
+
+describe("chamar novamente e não comparecimento", () => {
+  it("chamar novamente não muda o tempo total da etapa", () => {
+    // triagem chamada às 25, rechamada às 28, finalizada às 33 → 8 min no total
+    const d = stageDurations(
+      timeline(
+        ["WAITING_TRIAGE", 5],
+        ["IN_TRIAGE", 25],
+        ["IN_TRIAGE", 28], // chamar novamente
+        ["WAITING_CONSULT", 33],
+      ),
+    );
+    expect(d.IN_TRIAGE).toBe(8 * 60_000);
+    expect(d.WAITING_TRIAGE).toBe(20 * 60_000);
+  });
+
+  it("conta quem não compareceu e não o trata como finalizado", () => {
+    const s = summarize([
+      {
+        createdAt: new Date(2026, 9, 21, 8, 0, 0),
+        events: timeline(
+          ["WAITING_RECEPTION", 0],
+          ["WAITING_TRIAGE", 3],
+          ["IN_TRIAGE", 10],
+          ["NO_SHOW", 15],
+        ),
+      },
+      { createdAt: new Date(2026, 9, 21, 8, 5, 0), events: FULL_DAY },
+    ]);
+    expect(s.noShows).toBe(1);
+    expect(s.finished).toBe(1);
+  });
+
+  it("senha reinserida soma as duas esperas na recepção", () => {
+    const d = stageDurations(
+      timeline(
+        ["WAITING_RECEPTION", 0],
+        ["WAITING_TRIAGE", 4],
+        ["IN_TRIAGE", 10],
+        ["NO_SHOW", 15],
+        ["WAITING_RECEPTION", 40], // chegou depois e foi reinserida
+        ["WAITING_TRIAGE", 43],
+      ),
+    );
+    expect(d.WAITING_RECEPTION).toBe((4 + 3) * 60_000);
+  });
+});

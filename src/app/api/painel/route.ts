@@ -15,17 +15,30 @@ export async function GET() {
       createdAt: { gte: startOfToday() },
     },
     orderBy: { createdAt: "desc" },
-    take: 7,
+    take: 30,
     select: {
       id: true,
+      ticketId: true,
+      stage: true,
       room: true,
       createdAt: true,
       ticket: { select: { code: true, type: true } },
     },
   });
 
+  // "Chamar novamente" cria outro evento da mesma etapa: no histórico mostramos
+  // só a chamada mais recente de cada senha em cada etapa (triagem e consulta
+  // continuam separadas).
+  const seen = new Set<string>();
+  const unique = events.filter((e) => {
+    const key = `${e.ticketId}:${e.stage}`;
+    if (seen.has(key)) return false;
+    seen.add(key);
+    return true;
+  });
+
   return NextResponse.json({
-    calls: events.map((e) => ({
+    calls: unique.slice(0, 7).map((e) => ({
       id: e.id,
       code: e.ticket.code,
       type: e.ticket.type,

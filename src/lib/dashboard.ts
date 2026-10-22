@@ -1,7 +1,7 @@
 import "server-only";
 import { startOfDaysAgo } from "./dates";
 import { prisma } from "./db";
-import { WAITING_STAGES } from "./flow";
+import { ACTIVE_STAGES, WAITING_STAGES } from "./flow";
 import { findAlerts, summarize } from "./metrics";
 
 export const PERIODS = {
@@ -33,7 +33,7 @@ export async function loadDashboard(period: PeriodKey) {
       where: { stage: { in: WAITING_STAGES } },
       select: { code: true, type: true, stage: true, stageEnteredAt: true },
     }),
-    prisma.ticket.count({ where: { stage: { not: "DONE" } } }),
+    prisma.ticket.count({ where: { stage: { in: ACTIVE_STAGES } } }),
   ]);
 
   return {
