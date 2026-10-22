@@ -21,7 +21,15 @@ const SCREENS = [
 export default function Home() {
   return (
     <main className="mx-auto w-full max-w-3xl flex-1 px-6 py-16">
-      <h1 className="text-4xl font-bold tracking-tight">ClinicaFluxo</h1>
+      <div className="flex items-start justify-between gap-4">
+        <h1 className="text-4xl font-bold tracking-tight">ClinicaFluxo</h1>
+        <Link
+          href="/login"
+          className="rounded-lg border border-zinc-300 px-4 py-2 text-sm font-medium hover:bg-zinc-50"
+        >
+          Entrar (equipe)
+        </Link>
+      </div>
       <p className="mt-2 text-lg text-zinc-600">
         Gestão do fluxo de pacientes: da senha ao fim do atendimento.
       </p>

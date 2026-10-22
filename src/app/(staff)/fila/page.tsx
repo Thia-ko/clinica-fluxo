@@ -1,9 +1,10 @@
 import { prisma } from "@/lib/db";
-import { STAGE_LABEL, TRANSITIONS } from "@/lib/flow";
+import { requireUser } from "@/lib/auth";
+import { STAGE_LABEL, TRANSITIONS, canAdvance } from "@/lib/flow";
 import type { Stage } from "@prisma/client";
 import { connection } from "next/server";
 import { Suspense } from "react";
-import { advanceTicket } from "../actions";
+import { advanceTicket } from "@/app/actions";
 import AutoRefresh from "./AutoRefresh";
 
 const ACTIVE_STAGES: Stage[] = [
@@ -39,6 +40,7 @@ export default function FilaPage() {
 // Parte que depende de dados ao vivo: precisa rodar a cada requisição.
 async function QueueBoard() {
   await connection();
+  const user = await requireUser();
 
   const tickets = await prisma.ticket.findMany({
     where: { stage: { in: ACTIVE_STAGES } },
@@ -82,7 +84,7 @@ async function QueueBoard() {
                       {t.room && stage.startsWith("IN_") ? ` · ${t.room}` : ""}
                     </span>
                   </div>
-                  {transition && (
+                  {transition && canAdvance(user.role, transition) && (
                     <form
                       action={advanceTicket}
                       className="flex items-center gap-1"

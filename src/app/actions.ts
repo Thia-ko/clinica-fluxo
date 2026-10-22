@@ -1,8 +1,10 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
+import { redirect } from "next/navigation";
+import { requireUser } from "@/lib/auth";
 import { prisma } from "@/lib/db";
-import { TRANSITIONS } from "@/lib/flow";
+import { TRANSITIONS, canAdvance } from "@/lib/flow";
 import type { Stage, TicketType } from "@prisma/client";
 
 function startOfToday() {
@@ -36,6 +38,9 @@ export async function createTicket(type: TicketType) {
 
 /** Fila: avança uma senha para a próxima etapa do fluxo. */
 export async function advanceTicket(formData: FormData) {
+  // Esconder o botão na tela não basta: a ação confere login e cargo sozinha.
+  const user = await requireUser();
+
   const id = Number(formData.get("id"));
   const room = (formData.get("room") as string | null) || null;
 
@@ -43,7 +48,9 @@ export async function advanceTicket(formData: FormData) {
   if (!ticket) return;
 
   const transition = TRANSITIONS[ticket.stage as Stage];
-  if (!transition) return;
+  if (!transition || !canAdvance(user.role, transition)) {
+    redirect("/acesso-negado");
+  }
 
   // Só aceita salas que existem para aquela etapa (nunca confie no formulário).
   const finalRoom =
@@ -51,15 +58,21 @@ export async function advanceTicket(formData: FormData) {
       ? room
       : (transition.rooms?.[0] ?? null);
 
-  await prisma.ticket.update({
-    where: { id },
+  // Só avança se a senha ainda está na etapa que a pessoa viu na tela
+  // (evita duas pessoas avançarem a mesma senha ao mesmo tempo).
+  const moved = await prisma.ticket.updateMany({
+    where: { id, stage: ticket.stage },
     data: {
       stage: transition.next,
       room: finalRoom ?? ticket.room,
       stageEnteredAt: new Date(),
-      events: { create: { stage: transition.next, room: finalRoom } },
     },
   });
+  if (moved.count === 1) {
+    await prisma.ticketEvent.create({
+      data: { ticketId: id, stage: transition.next, room: finalRoom },
+    });
+  }
 
   revalidatePath("/fila");
 }

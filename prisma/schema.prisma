@@ -48,3 +48,34 @@ model TicketEvent {
 
   @@index([ticketId])
 }
+
+// Cargos da clínica. O ADMIN (RH/T.I.) cria usuários e define o cargo de cada um.
+enum Role {
+  ADMIN
+  RECEPTION
+  NURSE
+  DOCTOR
+  MANAGER
+}
+
+model User {
+  id           Int       @id @default(autoincrement())
+  name         String
+  email        String    @unique
+  passwordHash String // nunca a senha em si: só o hash (scrypt)
+  role         Role
+  active       Boolean   @default(true)
+  createdAt    DateTime  @default(now())
+  sessions     Session[]
+}
+
+// Sessão de login. Guardamos só o hash do token; o token de verdade fica no cookie.
+model Session {
+  id        String   @id // sha256 do token do cookie
+  userId    Int
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  expiresAt DateTime
+  createdAt DateTime @default(now())
+
+  @@index([userId])
+}
