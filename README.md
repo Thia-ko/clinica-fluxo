@@ -21,6 +21,7 @@ Cada tela tem a sua rota; não existe menu inicial.
 - **Painel de chamada** (`/painel`): tela para a TV com a senha chamada, a sala, relógio e histórico das últimas chamadas. Avisa com som e voz em português (toque uma vez em "Ativar som e voz", exigência dos navegadores).
 - **Login e cargos**: Admin, Recepção, Enfermagem, Médico e Gestor. Cada cargo só executa as ações da sua etapa (a Recepção faz check-in, a Enfermagem chama a triagem, o Médico chama o consultório). O Admin cria usuários e define cargos em `/admin/usuarios`.
 - **Painel de gestão** (`/gestao`, Gestor e Admin): espera média por paciente, tempo médio por etapa contra o limite, alertas de senhas atrasadas agora e horários de pico, com filtro por período e versão em tabela dos gráficos.
+- **Pesquisa de satisfação** (`/avaliar/[token]`, pública): o QR code impresso na senha abre uma pesquisa de 1 minuto no celular, liberada só depois do atendimento e respondida uma única vez por senha. O paciente dá nota de 1 a 5, marca o que mais incomodou e pode comentar, sem informar dado pessoal. O Gestor vê nota média, taxa de resposta, distribuição das notas, ranking de motivos e comentários em `/gestao`.
 - Cada mudança de etapa grava um horário (`TicketEvent`), base para calcular tempos de espera.
 
 Fluxo da senha:
@@ -36,7 +37,7 @@ Aguardando recepção → Aguardando triagem → Em triagem → Aguardando consu
 - [x] Fase 6: painel de gestão (tempo médio por etapa, alertas de atraso, horários de pico)
 - [x] Fase 7: cada tela na sua rota, com foco no painel de chamada e no totem (sem menu inicial: `/totem` no tablet, `/painel` na TV, equipe entra por `/login`)
 - [x] Fase 8: fila de atendimento (visão por cargo, destaque de atrasos, chamar novamente, não compareceu)
-- [ ] Fase 9: pesquisa de satisfação do paciente
+- [x] Fase 9: pesquisa de satisfação do paciente (QR code na senha, nota, motivos e comentário; resultados no painel de gestão)
 - [ ] Fase 10: deploy e troca de SQLite por PostgreSQL
 
 ## Tecnologias
@@ -58,6 +59,8 @@ npm run dev
 
 Testes das contas de tempo: `npm test`.
 
+O QR code da senha usa o endereço em que o totem foi aberto. Para testar a pesquisa no celular, abra o totem pelo IP do computador na rede (o `npm run dev` mostra, ex.: `http://192.168.1.14:3000/totem`).
+
 Abra <http://localhost:3000>. Os e-mails de demonstração e a senha estão em `prisma/seed.ts` (use apenas em desenvolvimento). Dica: deixe `/painel` aberto em uma aba e use `/fila` em outra para ver a chamada acontecendo.
 
 ## Segurança (o que já está feito)
@@ -66,19 +69,22 @@ Abra <http://localhost:3000>. Os e-mails de demonstração e a senha estão em `
 - Sessão em cookie `HttpOnly` + `SameSite=Lax`; o banco guarda só o hash do token e a sessão expira em 8 h.
 - Cada ação do servidor confere login e cargo, sem confiar no que a tela mostra.
 - Freio de 5 tentativas erradas por e-mail a cada 15 min e mensagem de erro genérica no login.
+- Pesquisa de satisfação sem login: o link da senha é secreto (128 bits aleatórios), só abre após o atendimento, aceita uma resposta por senha e tudo é validado no servidor. Não guarda dado pessoal do paciente.
 - Usuário desativado perde as sessões abertas na hora.
 
 ## Estrutura
 
 ```
-prisma/schema.prisma   modelo de dados (Ticket, TicketEvent, User, Session)
+prisma/schema.prisma   modelo de dados (Ticket, TicketEvent, User, Session, Feedback)
 src/lib/flow.ts        regras do fluxo: etapas, transições e salas
 src/app/actions.ts     ações do servidor (criar senha, avançar etapa)
 src/app/totem          tela do totem
 src/app/(staff)/fila   tela da fila de atendimento (exige login)
 src/app/(staff)/admin  gestão de usuários e cargos (só Admin)
 src/app/(staff)/gestao painel de gestão (gráficos, alertas)
-src/lib/metrics.ts     cálculo dos tempos por etapa e alertas (com testes)
+src/lib/metrics.ts     cálculo dos tempos por etapa, alertas e satisfação (com testes)
+src/lib/feedback.ts    motivos da pesquisa e validação do formulário
+src/app/avaliar        pesquisa de satisfação (pública, via QR code)
 src/app/login          tela de login
 src/lib/auth.ts        exige login/cargo em páginas e ações
 src/lib/session.ts     sessões em cookie HttpOnly + banco

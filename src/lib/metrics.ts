@@ -1,4 +1,4 @@
-import type { Stage, TicketType } from "@prisma/client";
+import type { FeedbackReason, Stage, TicketType } from "@prisma/client";
 import { MEASURED_STAGES, WAIT_LIMIT_MIN, WAITING_STAGES } from "./flow";
 
 const MIN = 60_000;
@@ -141,4 +141,44 @@ export function findAlerts(
       return waitedMin > limitMin ? [{ ...t, waitedMin, limitMin }] : [];
     })
     .sort((a, b) => b.waitedMin - b.limitMin - (a.waitedMin - a.limitMin));
+}
+
+export type FeedbackRow = { rating: number; reasons: FeedbackReason[] };
+
+export type FeedbackSummary = {
+  count: number;
+  /** Nota média de 1 a 5. */
+  avg: number | null;
+  /** Quantas respostas de cada nota; índice 0 = nota 1. */
+  distribution: number[];
+  /** Motivos mais citados primeiro. */
+  reasons: { reason: FeedbackReason; count: number }[];
+  /** % dos atendimentos finalizados que responderam. */
+  responseRate: number | null;
+};
+
+export function summarizeFeedback(
+  rows: FeedbackRow[],
+  finished: number,
+): FeedbackSummary {
+  const distribution = [0, 0, 0, 0, 0];
+  const reasonCount = new Map<FeedbackReason, number>();
+
+  for (const row of rows) {
+    distribution[row.rating - 1] += 1;
+    for (const reason of new Set(row.reasons)) {
+      reasonCount.set(reason, (reasonCount.get(reason) ?? 0) + 1);
+    }
+  }
+
+  return {
+    count: rows.length,
+    avg: mean(rows.map((r) => r.rating)),
+    distribution,
+    reasons: [...reasonCount]
+      .map(([reason, count]) => ({ reason, count }))
+      .sort((a, b) => b.count - a.count),
+    responseRate:
+      finished > 0 ? Math.min(100, (rows.length / finished) * 100) : null,
+  };
 }

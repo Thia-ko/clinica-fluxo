@@ -32,6 +32,9 @@ model Ticket {
   stageEnteredAt DateTime      @default(now())
   createdAt      DateTime      @default(now())
   events         TicketEvent[]
+  // Link secreto da pesquisa de satisfação (vai no QR code da senha)
+  feedbackToken  String?       @unique
+  feedback       Feedback?
 
   @@index([stage])
   @@index([createdAt])
@@ -79,4 +82,36 @@ model Session {
   createdAt DateTime @default(now())
 
   @@index([userId])
+}
+
+// O que mais incomodou o paciente (várias respostas possíveis).
+enum FeedbackReason {
+  WAIT_RECEPTION
+  WAIT_TRIAGE
+  WAIT_CONSULT
+  STAFF
+  COMFORT
+  SIGNAGE
+  OTHER
+}
+
+// Pesquisa de satisfação: uma por senha, sem nenhum dado pessoal do paciente.
+model Feedback {
+  id        Int              @id @default(autoincrement())
+  ticketId  Int              @unique
+  ticket    Ticket           @relation(fields: [ticketId], references: [id], onDelete: Cascade)
+  rating    Int // 1 a 5
+  comment   String?
+  reasons   FeedbackReasonOnFeedback[]
+  createdAt DateTime         @default(now())
+
+  @@index([createdAt])
+}
+
+model FeedbackReasonOnFeedback {
+  feedbackId Int
+  feedback   Feedback       @relation(fields: [feedbackId], references: [id], onDelete: Cascade)
+  reason     FeedbackReason
+
+  @@id([feedbackId, reason])
 }

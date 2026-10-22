@@ -9,6 +9,7 @@ import {
   type PeriodKey,
 } from "@/lib/dashboard";
 import { STAGE_LABEL } from "@/lib/flow";
+import FeedbackSection from "./FeedbackSection";
 import { fmtMin } from "./format";
 import HourColumns from "./HourColumns";
 import StageBars from "./StageBars";
@@ -37,7 +38,8 @@ async function Dashboard({
 }) {
   await requireUser(["MANAGER"]);
   const period = parsePeriod((await searchParams).periodo);
-  const { summary, alerts, inQueue } = await loadDashboard(period);
+  const { summary, alerts, inQueue, feedback, comments } =
+    await loadDashboard(period);
 
   return (
     <>
@@ -146,6 +148,8 @@ async function Dashboard({
             </p>
             <HourColumns byHour={summary.byHour} />
           </section>
+
+          <FeedbackSection feedback={feedback} comments={comments} />
         </>
       )}
     </>

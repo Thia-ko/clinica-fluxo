@@ -5,6 +5,7 @@ import { redirect } from "next/navigation";
 import { requireUser } from "@/lib/auth";
 import { startOfToday } from "@/lib/dates";
 import { prisma } from "@/lib/db";
+import { newFeedbackToken } from "@/lib/feedbackToken";
 import { CALLED_STAGES, TRANSITIONS, canAdvance } from "@/lib/flow";
 import type { Stage, TicketType } from "@prisma/client";
 
@@ -22,6 +23,7 @@ export async function createTicket(type: TicketType) {
       data: {
         code,
         type,
+        feedbackToken: newFeedbackToken(),
         events: { create: { stage: "WAITING_RECEPTION" } },
       },
     });
@@ -45,6 +47,7 @@ export async function createTicket(type: TicketType) {
     type: ticket.type,
     ahead,
     issuedAt: ticket.createdAt.toISOString(),
+    feedbackToken: ticket.feedbackToken,
   };
 }
 

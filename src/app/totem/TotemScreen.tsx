@@ -1,5 +1,6 @@
 "use client";
 
+import { QRCodeSVG } from "qrcode.react";
 import { useEffect, useState, useTransition } from "react";
 import { createTicket } from "../actions";
 
@@ -78,6 +79,18 @@ export default function TotemScreen() {
           <p className="mt-6 text-lg text-zinc-600 print:text-black">
             Aguarde ser chamado pelo painel.
           </p>
+          {issued.feedbackToken && (
+            <div className="mt-6 flex flex-col items-center gap-2 border-t border-zinc-200 pt-6 print:border-black">
+              <QRCodeSVG
+                value={`${window.location.origin}/avaliar/${issued.feedbackToken}`}
+                size={112}
+                aria-label="QR code para avaliar o atendimento"
+              />
+              <p className="max-w-xs text-sm text-zinc-600 print:text-black">
+                Depois do atendimento, aponte a câmera do celular para avaliar.
+              </p>
+            </div>
+          )}
         </section>
 
         <div className="flex gap-4 print:hidden">

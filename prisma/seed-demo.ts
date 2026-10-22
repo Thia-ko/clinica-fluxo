@@ -1,7 +1,13 @@
 // Gera senhas FICTÍCIAS dos últimos 7 dias para o painel de gestão ter o que mostrar.
 // Rode com: npm run seed:demo
 // ATENÇÃO: apaga todas as senhas existentes antes de gerar (só para desenvolvimento).
-import { PrismaClient, type Stage, type TicketType } from "@prisma/client";
+import {
+  PrismaClient,
+  type FeedbackReason,
+  type Stage,
+  type TicketType,
+} from "@prisma/client";
+import { newFeedbackToken } from "../src/lib/feedbackToken";
 
 if (process.env.NODE_ENV === "production") {
   throw new Error("O seed de demonstração não pode rodar em produção.");
@@ -46,6 +52,56 @@ function durations(crowd: number) {
     triage: between(4, 11),
     waitConsult: between(14, 34) * crowd * (rand() < 0.15 ? 1.8 : 1),
     consult: between(10, 28),
+  };
+}
+
+const COMMENTS = {
+  low: [
+    "Esperei muito tempo para ser chamado.",
+    "A demora para a consulta foi grande demais.",
+    "Fiquei sem saber quanto tempo ainda faltava.",
+  ],
+  mid: [
+    "Atendimento ok, mas poderia ser mais rápido.",
+    "A espera foi razoável.",
+  ],
+  high: [
+    "Fui bem atendido e rápido, obrigado!",
+    "Equipe atenciosa.",
+    "Tudo certo, sem demora.",
+  ],
+};
+
+/** Avaliação fictícia: quem esperou muito dá nota menor e cita a demora. */
+function makeFeedback(
+  d: ReturnType<typeof durations>,
+  doneAt: Date,
+  now: Date,
+) {
+  const waitTotal = d.waitReception + d.waitTriage + d.waitConsult;
+  const rating = Math.max(
+    1,
+    Math.min(5, Math.round(5 - waitTotal / 20 + between(-1, 1))),
+  );
+
+  const reasons: FeedbackReason[] = [];
+  if (d.waitReception > 10) reasons.push("WAIT_RECEPTION");
+  if (d.waitTriage > 15) reasons.push("WAIT_TRIAGE");
+  if (d.waitConsult > 30) reasons.push("WAIT_CONSULT");
+  if (rating <= 3 && rand() < 0.2) reasons.push("STAFF");
+  if (rand() < 0.08) reasons.push("COMFORT");
+  if (rand() < 0.06) reasons.push("SIGNAGE");
+  const kept = rating >= 4 && rand() < 0.8 ? [] : reasons;
+
+  const group = rating <= 2 ? "low" : rating === 3 ? "mid" : "high";
+  const createdAt = new Date(
+    Math.min(now.getTime(), doneAt.getTime() + between(2, 30) * 60_000),
+  );
+  return {
+    rating,
+    comment: rand() < 0.25 ? pick(COMMENTS[group]) : null,
+    createdAt,
+    reasons: { create: kept.map((reason) => ({ reason })) },
   };
 }
 
@@ -103,6 +159,10 @@ async function main() {
         const happened = steps.filter((s) => s.at <= now);
         const last = happened[happened.length - 1];
         const lastRoom = [...happened].reverse().find((s) => s.room)?.room;
+        const feedback =
+          last.stage === "DONE" && rand() < 0.55
+            ? makeFeedback(d, last.at, now)
+            : undefined;
 
         await prisma.ticket.create({
           data: {
@@ -112,6 +172,8 @@ async function main() {
             room: lastRoom ?? null,
             createdAt: arrival,
             stageEnteredAt: last.at,
+            feedbackToken: newFeedbackToken(),
+            ...(feedback ? { feedback: { create: feedback } } : {}),
             events: {
               create: happened.map((s) => ({
                 stage: s.stage,
