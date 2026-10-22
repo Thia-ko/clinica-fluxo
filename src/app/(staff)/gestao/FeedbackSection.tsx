@@ -1,3 +1,4 @@
+import { CLINIC_TZ } from "@/lib/dates";
 import { RATING_LABEL, REASON_LABEL } from "@/lib/feedback";
 import type { FeedbackSummary } from "@/lib/metrics";
 import type { FeedbackReason } from "@prisma/client";
@@ -100,7 +101,9 @@ export default function FeedbackSection({
                     <p>
                       <strong>Nota {c.rating}</strong>
                       <span className="ml-2 text-xs text-zinc-500">
-                        {c.at.toLocaleDateString("pt-BR")}
+                        {c.at.toLocaleDateString("pt-BR", {
+                          timeZone: CLINIC_TZ,
+                        })}
                       </span>
                     </p>
                     {/* Texto livre do paciente: o React escapa, então é seguro exibir. */}

@@ -1,4 +1,5 @@
 import type { FeedbackReason, Stage, TicketType } from "@prisma/client";
+import { hourInClinicTz } from "./dates";
 import { MEASURED_STAGES, WAIT_LIMIT_MIN, WAITING_STAGES } from "./flow";
 
 const MIN = 60_000;
@@ -68,7 +69,7 @@ export function summarize(tickets: TicketTimeline[]): Summary {
   let noShows = 0;
 
   for (const t of tickets) {
-    byHour[t.createdAt.getHours()] += 1;
+    byHour[hourInClinicTz(t.createdAt)] += 1;
     if (t.events.some((e) => e.stage === "NO_SHOW")) noShows += 1;
 
     const durations = stageDurations(t.events);

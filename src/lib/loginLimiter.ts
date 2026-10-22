@@ -1,29 +1,26 @@
-// Freio simples contra tentativa de adivinhar senha: 5 erros por e-mail a cada 15 minutos.
-// Fica na memória do servidor (basta para estudo; em produção usaríamos o banco ou Redis).
+import { prisma } from "./db";
+
+// Freio contra tentativa de adivinhar senha: 5 erros por e-mail a cada 15 minutos.
+// As tentativas ficam no banco: na nuvem cada requisição pode cair numa instância
+// diferente, então a memória do servidor não serviria.
 const MAX_FAILURES = 5;
 const WINDOW_MS = 15 * 60 * 1000;
 
-const failures = new Map<string, { count: number; since: number }>();
-
-export function isLocked(email: string) {
-  const entry = failures.get(email);
-  if (!entry) return false;
-  if (Date.now() - entry.since > WINDOW_MS) {
-    failures.delete(email);
-    return false;
-  }
-  return entry.count >= MAX_FAILURES;
+export async function isLocked(email: string) {
+  const failures = await prisma.loginAttempt.count({
+    where: { email, createdAt: { gte: new Date(Date.now() - WINDOW_MS) } },
+  });
+  return failures >= MAX_FAILURES;
 }
 
-export function registerFailure(email: string) {
-  const entry = failures.get(email);
-  if (!entry || Date.now() - entry.since > WINDOW_MS) {
-    failures.set(email, { count: 1, since: Date.now() });
-  } else {
-    entry.count += 1;
-  }
+export async function registerFailure(email: string) {
+  await prisma.loginAttempt.create({ data: { email } });
+  // Faxina: tentativas com mais de um dia não servem para mais nada.
+  await prisma.loginAttempt.deleteMany({
+    where: { createdAt: { lt: new Date(Date.now() - 24 * 60 * 60 * 1000) } },
+  });
 }
 
-export function clearFailures(email: string) {
-  failures.delete(email);
+export async function clearFailures(email: string) {
+  await prisma.loginAttempt.deleteMany({ where: { email } });
 }

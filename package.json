@@ -7,9 +7,15 @@
     "build": "next build",
     "start": "next start",
     "lint": "eslint",
-    "seed": "prisma db seed",
     "test": "vitest run",
-    "seed:demo": "tsx prisma/seed-demo.ts"
+    "postinstall": "prisma generate",
+    "vercel-build": "prisma generate && prisma migrate deploy && next build",
+    "db:up": "docker compose up -d db",
+    "db:down": "docker compose down",
+    "db:migrate": "prisma migrate dev",
+    "seed": "prisma db seed",
+    "seed:demo": "tsx prisma/seed-demo.ts",
+    "create-admin": "tsx prisma/create-admin.ts"
   },
   "dependencies": {
     "@prisma/client": "^6.19.3",

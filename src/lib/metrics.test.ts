@@ -11,7 +11,7 @@ import {
 function timeline(
   ...steps: [TimelineEvent["stage"], number][]
 ): TimelineEvent[] {
-  const base = new Date(2026, 9, 21, 8, 0, 0).getTime();
+  const base = new Date("2026-10-21T08:00:00-03:00").getTime();
   return steps.map(([stage, min]) => ({
     stage,
     createdAt: new Date(base + min * 60_000),
@@ -64,11 +64,11 @@ describe("totalDuration", () => {
 });
 
 describe("summarize", () => {
-  const day = new Date(2026, 9, 21, 8, 0, 0);
+  const day = new Date("2026-10-21T08:00:00-03:00");
   const tickets = [
     { createdAt: day, events: FULL_DAY },
     {
-      createdAt: new Date(2026, 9, 21, 9, 30, 0),
+      createdAt: new Date("2026-10-21T09:30:00-03:00"),
       events: timeline(
         ["WAITING_RECEPTION", 90],
         ["WAITING_TRIAGE", 95], // 5 min
@@ -122,7 +122,7 @@ describe("summarize", () => {
 });
 
 describe("findAlerts", () => {
-  const now = new Date(2026, 9, 21, 10, 0, 0);
+  const now = new Date("2026-10-21T10:00:00-03:00");
   const ago = (min: number) => new Date(now.getTime() - min * 60_000);
 
   it("só alerta quem passou do limite da etapa, os piores primeiro", () => {
@@ -188,7 +188,7 @@ describe("chamar novamente e não comparecimento", () => {
   it("conta quem não compareceu e não o trata como finalizado", () => {
     const s = summarize([
       {
-        createdAt: new Date(2026, 9, 21, 8, 0, 0),
+        createdAt: new Date("2026-10-21T08:00:00-03:00"),
         events: timeline(
           ["WAITING_RECEPTION", 0],
           ["WAITING_TRIAGE", 3],
@@ -196,7 +196,7 @@ describe("chamar novamente e não comparecimento", () => {
           ["NO_SHOW", 15],
         ),
       },
-      { createdAt: new Date(2026, 9, 21, 8, 5, 0), events: FULL_DAY },
+      { createdAt: new Date("2026-10-21T08:05:00-03:00"), events: FULL_DAY },
     ]);
     expect(s.noShows).toBe(1);
     expect(s.finished).toBe(1);

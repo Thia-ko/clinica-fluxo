@@ -1,0 +1,22 @@
+# Banco PostgreSQL para desenvolvimento local.  Uso:  npm run db:up
+# Os dados ficam no volume "clinicafluxo-db" e sobrevivem a reinícios.
+services:
+  db:
+    image: postgres:16-alpine
+    container_name: clinicafluxo-db
+    environment:
+      POSTGRES_USER: clinica
+      POSTGRES_PASSWORD: clinica_dev # só para desenvolvimento local
+      POSTGRES_DB: clinicafluxo
+    ports:
+      - "5433:5432"
+    volumes:
+      - clinicafluxo-db:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U clinica -d clinicafluxo"]
+      interval: 3s
+      timeout: 3s
+      retries: 20
+
+volumes:
+  clinicafluxo-db:

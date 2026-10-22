@@ -38,26 +38,30 @@ Aguardando recepção → Aguardando triagem → Em triagem → Aguardando consu
 - [x] Fase 7: cada tela na sua rota, com foco no painel de chamada e no totem (sem menu inicial: `/totem` no tablet, `/painel` na TV, equipe entra por `/login`)
 - [x] Fase 8: fila de atendimento (visão por cargo, destaque de atrasos, chamar novamente, não compareceu)
 - [x] Fase 9: pesquisa de satisfação do paciente (QR code na senha, nota, motivos e comentário; resultados no painel de gestão)
-- [ ] Fase 10: deploy e troca de SQLite por PostgreSQL
+- [x] Fase 10 (código): PostgreSQL com migrações, aparelhos protegidos por chave, fuso de Brasília, freio de login no banco, cabeçalhos de segurança e build de produção verificado
+- [ ] Fase 10 (publicação): criar as contas no Neon e na Vercel e publicar, seguindo o [guia de publicação](docs/DEPLOY.md)
 
 ## Tecnologias
 
-Next.js 16 · React 19 · TypeScript · Tailwind CSS 4 · Prisma 6 · SQLite · Vitest
+Next.js 16 · React 19 · TypeScript · Tailwind CSS 4 · Prisma 6 · PostgreSQL · Vitest · Docker (só para o banco local)
 
 ## Como rodar
 
-Requisitos: Node.js 20+.
+Requisitos: Node.js 20+ e Docker (para o PostgreSQL local).
 
 ```bash
 npm install
-cp .env.example .env
-npx prisma db push
-npm run seed   # cria usuários FICTÍCIOS de demonstração (veja prisma/seed.ts)
-npm run seed:demo   # opcional: ~700 senhas FICTÍCIAS para o painel de gestão (apaga as senhas atuais)
+cp .env.example .env     # no Windows: copy .env.example .env
+npm run db:up            # sobe o PostgreSQL no Docker (porta 5433)
+npm run db:migrate       # cria as tabelas
+npm run seed             # usuários FICTÍCIOS de demonstração (veja prisma/seed.ts)
+npm run seed:demo        # opcional: ~600 senhas FICTÍCIAS para o painel de gestão (apaga as senhas atuais)
 npm run dev
 ```
 
-Testes das contas de tempo: `npm test`.
+Testes das contas de tempo, datas e pesquisa: `npm test`. Para publicar na internet, veja [docs/DEPLOY.md](docs/DEPLOY.md).
+
+Em desenvolvimento, `/totem` e `/painel` abrem sem chave. Para testar o bloqueio de aparelhos, defina `DEVICE_KEY` no `.env` (veja `.env.example`) e autorize o navegador em `/aparelho`.
 
 O QR code da senha usa o endereço em que o totem foi aberto. Para testar a pesquisa no celular, abra o totem pelo IP do computador na rede (o `npm run dev` mostra, ex.: `http://192.168.1.14:3000/totem`).
 
@@ -68,14 +72,22 @@ Abra <http://localhost:3000>. Os e-mails de demonstração e a senha estão em `
 - Senhas guardadas só como hash `scrypt` com salt; nunca em texto.
 - Sessão em cookie `HttpOnly` + `SameSite=Lax`; o banco guarda só o hash do token e a sessão expira em 8 h.
 - Cada ação do servidor confere login e cargo, sem confiar no que a tela mostra.
-- Freio de 5 tentativas erradas por e-mail a cada 15 min e mensagem de erro genérica no login.
+- Freio de 5 tentativas erradas por e-mail a cada 15 min (guardado no banco, então vale mesmo na nuvem) e mensagem de erro genérica no login.
+- Totem e painel exigem um aparelho autorizado com a `DEVICE_KEY` (digitada uma vez em `/aparelho`, nunca na URL); sem a chave configurada, ficam fechados em produção. A API do painel e a emissão de senhas conferem a mesma autorização, e há um limite de 40 senhas por minuto.
+- A numeração das senhas é protegida por trava no banco (dois toques simultâneos não geram o mesmo código) e o "dia" segue o fuso de Brasília, mesmo com o servidor em UTC.
+- Cabeçalhos de segurança em todas as respostas (anti-clickjacking, anti-sniffing, política de referência e de permissões).
 - Pesquisa de satisfação sem login: o link da senha é secreto (128 bits aleatórios), só abre após o atendimento, aceita uma resposta por senha e tudo é validado no servidor. Não guarda dado pessoal do paciente.
 - Usuário desativado perde as sessões abertas na hora.
 
 ## Estrutura
 
 ```
-prisma/schema.prisma   modelo de dados (Ticket, TicketEvent, User, Session, Feedback)
+prisma/schema.prisma   modelo de dados (Ticket, TicketEvent, User, Session, Feedback...)
+prisma/migrations      histórico versionado do banco (aplicado no deploy)
+prisma/create-admin.ts cria o primeiro administrador de um ambiente real
+docs/DEPLOY.md         guia de publicação (Neon + Vercel)
+src/lib/dates.ts       datas no fuso da clínica (com testes)
+src/lib/device.ts      autorização de aparelhos (totem e painel)
 src/lib/flow.ts        regras do fluxo: etapas, transições e salas
 src/app/actions.ts     ações do servidor (criar senha, avançar etapa)
 src/app/totem          tela do totem

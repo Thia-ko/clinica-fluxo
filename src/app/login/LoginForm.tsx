@@ -17,6 +17,7 @@ export default function LoginForm() {
           name="email"
           type="email"
           required
+          defaultValue={state.email}
           autoComplete="username"
           className="mt-1 w-full rounded-lg border border-zinc-300 px-3 py-2"
         />

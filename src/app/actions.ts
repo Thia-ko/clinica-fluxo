@@ -5,15 +5,31 @@ import { redirect } from "next/navigation";
 import { requireUser } from "@/lib/auth";
 import { startOfToday } from "@/lib/dates";
 import { prisma } from "@/lib/db";
+import { isDeviceAuthorized } from "@/lib/device";
 import { newFeedbackToken } from "@/lib/feedbackToken";
 import { CALLED_STAGES, TRANSITIONS, canAdvance } from "@/lib/flow";
 import type { Stage, TicketType } from "@prisma/client";
 
 /** Totem: gera a próxima senha do dia (N001, N002... / P001, P002...). */
 export async function createTicket(type: TicketType) {
+  // Quem não é um aparelho autorizado (nem equipe logada) não gera senha.
+  if (!(await isDeviceAuthorized())) throw new Error("Aparelho não autorizado");
+  if (type !== "NORMAL" && type !== "PRIORITY")
+    throw new Error("Tipo inválido");
+
+  // Freio global: mesmo com o aparelho autorizado, um erro ou abuso não pode
+  // encher a fila de senhas (no máximo 40 por minuto).
+  const lastMinute = await prisma.ticket.count({
+    where: { createdAt: { gte: new Date(Date.now() - 60_000) } },
+  });
+  if (lastMinute >= 40) throw new Error("Muitas senhas em pouco tempo");
+
   const prefix = type === "PRIORITY" ? "P" : "N";
 
   const { ticket, ahead } = await prisma.$transaction(async (tx) => {
+    // Trava a numeração: dois toques ao mesmo tempo não podem gerar o mesmo código.
+    await tx.$executeRaw`SELECT pg_advisory_xact_lock(73001)`;
+
     const countToday = await tx.ticket.count({
       where: { type, createdAt: { gte: startOfToday() } },
     });

@@ -7,7 +7,8 @@ import { hashPassword, verifyPassword } from "@/lib/password";
 import { homeFor } from "@/lib/roles";
 import { createSession, destroySession } from "@/lib/session";
 
-export type LoginState = { error?: string };
+// `email` volta para o formulário: o React 19 limpa os campos depois de cada envio.
+export type LoginState = { error?: string; email?: string };
 
 // Hash "de mentira" para gastar o mesmo tempo quando o e-mail não existe,
 // assim ninguém descobre quais e-mails estão cadastrados medindo a resposta.
@@ -22,10 +23,11 @@ export async function login(
     .toLowerCase();
   const password = String(formData.get("password") ?? "");
 
-  if (!email || !password) return { error: "Informe e-mail e senha." };
-  if (isLocked(email)) {
+  if (!email || !password) return { error: "Informe e-mail e senha.", email };
+  if (await isLocked(email)) {
     return {
       error: "Muitas tentativas. Aguarde alguns minutos e tente de novo.",
+      email,
     };
   }
 
@@ -37,11 +39,11 @@ export async function login(
   );
 
   if (!user || !user.active || !passwordOk) {
-    registerFailure(email);
-    return { error: "E-mail ou senha incorretos." };
+    await registerFailure(email);
+    return { error: "E-mail ou senha incorretos.", email };
   }
 
-  clearFailures(email);
+  await clearFailures(email);
   await prisma.session.deleteMany({ where: { expiresAt: { lt: new Date() } } });
   await createSession(user.id);
   redirect(homeFor(user.role));

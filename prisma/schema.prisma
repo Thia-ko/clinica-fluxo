@@ -3,8 +3,9 @@ generator client {
 }
 
 datasource db {
-  provider = "sqlite"
-  url      = env("DATABASE_URL")
+  provider  = "postgresql"
+  url       = env("DATABASE_URL") // conexão normal (pode passar por pooler, como no Neon)
+  directUrl = env("DIRECT_URL") // conexão direta, usada pelas migrações
 }
 
 enum TicketType {
@@ -114,4 +115,14 @@ model FeedbackReasonOnFeedback {
   reason     FeedbackReason
 
   @@id([feedbackId, reason])
+}
+
+// Tentativas de login que falharam. Ficam no banco (e não na memória do servidor)
+// porque na nuvem cada requisição pode cair numa instância diferente.
+model LoginAttempt {
+  id        Int      @id @default(autoincrement())
+  email     String
+  createdAt DateTime @default(now())
+
+  @@index([email, createdAt])
 }

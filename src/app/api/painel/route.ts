@@ -1,5 +1,6 @@
 import { startOfToday } from "@/lib/dates";
 import { prisma } from "@/lib/db";
+import { isDeviceAuthorized } from "@/lib/device";
 import { CALLED_STAGES } from "@/lib/flow";
 import { NextResponse } from "next/server";
 
@@ -9,6 +10,13 @@ import { NextResponse } from "next/server";
  * mesmo depois que o paciente avançou de etapa.
  */
 export async function GET() {
+  if (!(await isDeviceAuthorized())) {
+    return NextResponse.json(
+      { error: "Aparelho não autorizado" },
+      { status: 401 },
+    );
+  }
+
   const events = await prisma.ticketEvent.findMany({
     where: {
       stage: { in: CALLED_STAGES },
