@@ -4,6 +4,7 @@ import { prisma } from "@/lib/db";
 import { ALL_ROLES, ROLE_LABEL } from "@/lib/roles";
 import { changeUserRole, toggleUserActive } from "./actions";
 import CreateUserForm from "./CreateUserForm";
+import ResetPasswordForm from "./ResetPasswordForm";
 
 export default function UsuariosPage() {
   return (
@@ -89,6 +90,14 @@ async function UserList() {
                         {u.active ? "Desativar" : "Reativar"}
                       </button>
                     </form>
+                  )}
+                  {u.mustChangePassword && (
+                    <p className="mt-1 text-xs text-amber-800">
+                      ▲ senha provisória: ainda não trocou
+                    </p>
+                  )}
+                  {!isMe && (
+                    <ResetPasswordForm userId={u.id} userName={u.name} />
                   )}
                 </td>
               </tr>

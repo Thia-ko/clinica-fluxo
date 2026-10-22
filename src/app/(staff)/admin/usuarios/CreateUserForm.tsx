@@ -3,6 +3,7 @@
 import { useActionState } from "react";
 import { ALL_ROLES, ROLE_LABEL } from "@/lib/roles";
 import { createUser, type CreateUserState } from "./actions";
+import TempPasswordNotice from "./TempPasswordNotice";
 
 const inputClass = "mt-1 w-full rounded-lg border border-zinc-300 px-3 py-2";
 
@@ -51,17 +52,10 @@ export default function CreateUserForm() {
           ))}
         </select>
       </label>
-      <label className="text-sm font-medium">
-        Senha inicial (mín. 8 caracteres)
-        <input
-          name="password"
-          type="password"
-          required
-          minLength={8}
-          autoComplete="new-password"
-          className={inputClass}
-        />
-      </label>
+      <p className="self-end text-xs text-zinc-500">
+        O sistema gera uma senha provisória. A pessoa troca por uma só dela no
+        primeiro acesso.
+      </p>
 
       <div className="flex items-center gap-4 sm:col-span-2">
         <button
@@ -79,6 +73,12 @@ export default function CreateUserForm() {
           <p className="text-sm text-green-700">{state.success}</p>
         )}
       </div>
+
+      {state.tempPassword && (
+        <div className="sm:col-span-2">
+          <TempPasswordNotice password={state.tempPassword} />
+        </div>
+      )}
     </form>
   );
 }

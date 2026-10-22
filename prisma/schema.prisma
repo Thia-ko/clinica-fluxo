@@ -70,6 +70,8 @@ model User {
   passwordHash String // nunca a senha em si: só o hash (scrypt)
   role         Role
   active       Boolean   @default(true)
+  // Senha provisória (criada ou redefinida pelo Admin): a pessoa precisa trocá-la no próximo acesso.
+  mustChangePassword Boolean @default(false)
   createdAt    DateTime  @default(now())
   sessions     Session[]
 }
@@ -81,6 +83,7 @@ model Session {
   user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
   expiresAt DateTime
   createdAt DateTime @default(now())
+  userAgent String? // navegador/aparelho, só para a pessoa reconhecer suas sessões
 
   @@index([userId])
 }
@@ -122,7 +125,9 @@ model FeedbackReasonOnFeedback {
 model LoginAttempt {
   id        Int      @id @default(autoincrement())
   email     String
+  ip        String? // permite limitar também por origem, e não só por e-mail
   createdAt DateTime @default(now())
 
   @@index([email, createdAt])
+  @@index([ip, createdAt])
 }

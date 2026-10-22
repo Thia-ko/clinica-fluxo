@@ -1,6 +1,7 @@
 "use server";
 
 import { redirect } from "next/navigation";
+import { getClientIp } from "@/lib/clientIp";
 import { prisma } from "@/lib/db";
 import { clearFailures, isLocked, registerFailure } from "@/lib/loginLimiter";
 import { hashPassword, verifyPassword } from "@/lib/password";
@@ -22,9 +23,14 @@ export async function login(
     .trim()
     .toLowerCase();
   const password = String(formData.get("password") ?? "");
+  const remember = formData.get("remember") === "on";
 
-  if (!email || !password) return { error: "Informe e-mail e senha.", email };
-  if (await isLocked(email)) {
+  if (!email || !password) {
+    return { error: "Informe e-mail e senha.", email };
+  }
+
+  const ip = await getClientIp();
+  if (await isLocked(email, ip)) {
     return {
       error: "Muitas tentativas. Aguarde alguns minutos e tente de novo.",
       email,
@@ -39,14 +45,16 @@ export async function login(
   );
 
   if (!user || !user.active || !passwordOk) {
-    await registerFailure(email);
+    await registerFailure(email, ip);
     return { error: "E-mail ou senha incorretos.", email };
   }
 
   await clearFailures(email);
   await prisma.session.deleteMany({ where: { expiresAt: { lt: new Date() } } });
-  await createSession(user.id);
-  redirect(homeFor(user.role));
+  await createSession(user.id, { remember });
+
+  // Senha provisória: vai direto para a troca, antes de qualquer outra tela.
+  redirect(user.mustChangePassword ? "/conta" : homeFor(user.role));
 }
 
 export async function logout() {
